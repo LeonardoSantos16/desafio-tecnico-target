@@ -1,5 +1,6 @@
 ﻿using target.exercicio1;
 using target.exercicio2;
+using target.exercicio3;
 
 namespace target
 {
@@ -9,8 +10,10 @@ namespace target
         {
             //var repositorioVendas = new CalculadoraComissao();
             //repositorioVendas.ExibirComissoes();
-            var exercicio2 = new ControleEstoque(Path.Combine(AppContext.BaseDirectory, "exercicio2", "estoque.json"));
-            exercicio2.Executar();
+            //var exercicio2 = new ControleEstoque(Path.Combine(AppContext.BaseDirectory, "exercicio2", "estoque.json"));
+            //exercicio2.Executar();
+            var exercicio3 = new CalculadoraJuros();
+            exercicio3.Executar();
         }
     }
 }
