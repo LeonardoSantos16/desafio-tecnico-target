@@ -6,21 +6,9 @@ namespace target.exercicio1
     {
         private readonly List<Vendas> _vendas;
 
-        public CalculadoraComissao()
+        public CalculadoraComissao(List<Vendas> vendas)
         {
-            var vendas = CarregarVendas(Path.Combine(AppContext.BaseDirectory, "exercicio1", "sales.json"));
             _vendas = vendas;
-        }
-
-        private static List<Vendas> CarregarVendas(string path)
-        {
-            var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
-            var json = File.ReadAllText(path);
-
-            var data = JsonSerializer.Deserialize<DadosDaVenda>(json, options)
-                ?? throw new InvalidOperationException("Erro ao desserializar as vendas.");
-
-            return data.Vendas;
         }
 
         public void ExibirComissoes()

@@ -8,12 +8,15 @@ namespace target
     {
         static void Main(string[] args)
         {
-            //var repositorioVendas = new CalculadoraComissao();
-            //repositorioVendas.ExibirComissoes();
+            var repositorio = new RepositorioVendas(Path.Combine(AppContext.BaseDirectory, "exercicio1", "vendas.json"));
+            var vendas = repositorio.ObterTodas();
+
+            var repositorioVendas = new CalculadoraComissao(vendas);
+            repositorioVendas.ExibirComissoes();
             //var exercicio2 = new ControleEstoque(Path.Combine(AppContext.BaseDirectory, "exercicio2", "estoque.json"));
             //exercicio2.Executar();
-            var exercicio3 = new CalculadoraJuros();
-            exercicio3.Executar();
+            //var exercicio3 = new CalculadoraJuros();
+            //exercicio3.Executar();
         }
     }
 }
