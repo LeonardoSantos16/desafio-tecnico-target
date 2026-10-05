@@ -5,72 +5,60 @@ namespace target.exercicio2
 {
     public class ControleEstoque
     {
-        private readonly string _caminhoJson;
-        private readonly List<Produto> _produtos;
-        private int _proximoId = 1;
+        private readonly RepositorioEstoque _repositorio;
+        private readonly Dictionary<int, Produto> _produtos;
+        private readonly List<Movimentacao> _movimentacoes;
+        private int _proximoId;
 
-        public ControleEstoque(string caminhoJson)
+        public ControleEstoque(RepositorioEstoque repositorio)
         {
-            _caminhoJson = caminhoJson;
-            var opcoes = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
-            var json = File.ReadAllText(caminhoJson);
-            _produtos = JsonSerializer.Deserialize<DadosEstoque>(json, opcoes)!.Estoque;
+            _repositorio = repositorio;
+            _produtos = repositorio.ObterProdutos().ToDictionary(p => p.CodigoProduto);
+            _movimentacoes = repositorio.ObterMovimentacoes().ToList();
+            _proximoId = _movimentacoes.Count == 0 ? 1 : _movimentacoes.Max(m => m.Id) + 1;
         }
 
-        public int Movimentar(int codigoProduto, int quantidade, string descricao)
+        public IEnumerable<Produto> Produtos => _produtos.Values.OrderBy(p => p.CodigoProduto);
+
+        public IReadOnlyList<Movimentacao> Movimentacoes => _movimentacoes;
+
+        public Movimentacao Movimentar(int codigoProduto, TipoMovimentacao tipo, int quantidade, string descricao)
         {
-            var produto = _produtos.FirstOrDefault(p => p.CodigoProduto == codigoProduto)
-                ?? throw new ArgumentException($"Produto {codigoProduto} não encontrado.");
+            if (!_produtos.TryGetValue(codigoProduto, out var produto))
+                throw new ArgumentException($"Produto {codigoProduto} não encontrado.");
 
-            if (produto.Estoque + quantidade < 0)
-                throw new InvalidOperationException($"Estoque insuficiente. Disponível: {produto.Estoque}.");
+            if (quantidade <= 0)
+                throw new ArgumentException("A quantidade deve ser maior que zero.");
 
-            produto.Estoque += quantidade;
-            Salvar();
-            int id = _proximoId++;
-            Console.WriteLine($"Movimentação #{id} - {descricao} - {produto.DescricaoProduto}: {quantidade:+#;-#}");
+            if (string.IsNullOrWhiteSpace(descricao))
+                throw new ArgumentException("Informe uma descrição para a movimentação.");
 
-            return produto.Estoque;
-        }
+            int novoEstoque = tipo == TipoMovimentacao.Entrada
+                ? produto.Estoque + quantidade
+                : produto.Estoque - quantidade;
 
-        private void Salvar()
-        {
-            var dados = new DadosEstoque { Estoque = _produtos };
-            File.WriteAllText(_caminhoJson, JsonSerializer.Serialize(dados, Opcoes));
-        }
+            if (novoEstoque < 0)
+                throw new InvalidOperationException(
+                    $"Estoque insuficiente. Disponível: {produto.Estoque}, solicitado: {quantidade}.");
 
-        private static readonly JsonSerializerOptions Opcoes = new()
-        {
-            PropertyNameCaseInsensitive = true,
-            PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-            WriteIndented = true,
-            Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping
-        };
+            var movimentacao = new Movimentacao(
+                Id: _proximoId,
+                CodigoProduto: codigoProduto,
+                DescricaoProduto: produto.DescricaoProduto,
+                Tipo: tipo,
+                Quantidade: quantidade,
+                Descricao: descricao.Trim(),
+                DataHora: DateTime.Now,
+                EstoqueFinal: novoEstoque);
 
-        public void Executar()
-        {
-            while (true)
-            {
-                Console.Write("\nCódigo do produto (Enter para sair): ");
-                var entrada = Console.ReadLine();
-                if (string.IsNullOrWhiteSpace(entrada)) return;
+            _produtos[codigoProduto] = produto with { Estoque = novoEstoque };
+            _movimentacoes.Add(movimentacao);
+            _proximoId++;
 
-                Console.Write("Quantidade (positiva = entrada, negativa = saída): ");
-                int quantidade = int.Parse(Console.ReadLine()!);
+            _repositorio.SalvarProdutos(_produtos.Values);
+            _repositorio.SalvarMovimentacoes(_movimentacoes);
 
-                Console.Write("Descrição: ");
-                string descricao = Console.ReadLine()!;
-
-                try
-                {
-                    int estoqueFinal = Movimentar(int.Parse(entrada), quantidade, descricao);
-                    Console.WriteLine($"Estoque final: {estoqueFinal}");
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine($"Erro: {ex.Message}");
-                }
-            }
+            return movimentacao;
         }
     }
 }

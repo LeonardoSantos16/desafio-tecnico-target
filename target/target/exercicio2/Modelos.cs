@@ -1,16 +1,24 @@
 ﻿
 namespace target.exercicio2
 {
-    public class Produto
+    public record Produto(int CodigoProduto, string DescricaoProduto, int Estoque);
+
+    public record DadosEstoque(IReadOnlyList<Produto> Estoque);
+
+    public enum TipoMovimentacao
     {
-        public int CodigoProduto { get; set; }
-        public string DescricaoProduto { get; set; } = string.Empty;
-        public int Estoque { get; set; }
+        Entrada,
+        Saida
     }
 
-    public class DadosEstoque
-    {
-        public List<Produto> Estoque { get; set; } = new();
-    }
+    public record Movimentacao(
+        int Id,
+        int CodigoProduto,
+        string DescricaoProduto,
+        TipoMovimentacao Tipo,
+        int Quantidade,
+        string Descricao,
+        DateTime DataHora,
+        int EstoqueFinal);
 
 }
